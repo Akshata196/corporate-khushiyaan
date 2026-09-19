@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+
+  body {
+    @apply bg-cream-50 text-charcoal-800 font-sans antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+}
+
+@layer utilities {
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+  }
+
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .text-gradient-brand {
+    @apply bg-gradient-to-r from-brand-500 to-gold-500 bg-clip-text text-transparent;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #FFF6EA;
+}
+::-webkit-scrollbar-thumb {
+  background: #F5D5A8;
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #FF9B7A;
+}
