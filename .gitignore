@@ -29,3 +29,6 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+
+# Local admin maintenance scripts
+backend/src/scripts/updateAdmin.ts

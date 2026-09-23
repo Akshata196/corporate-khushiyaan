@@ -1,8 +1,8 @@
-import { FormEvent, useState } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, ArrowRight } from 'lucide-react';
 import { API_URL } from '@/lib/api';
-
 
 export function AdminLogin() {
   const navigate = useNavigate();
@@ -36,7 +36,14 @@ export function AdminLogin() {
         throw new Error(data.message || 'Login failed.');
       }
 
+      // Store authentication token
       localStorage.setItem('adminToken', data.token);
+
+      // Store admin account information
+      localStorage.setItem(
+        'adminUser',
+        JSON.stringify(data.admin)
+      );
 
       navigate('/admin/dashboard');
     } catch (error) {
@@ -48,7 +55,9 @@ export function AdminLogin() {
           : 'Something went wrong. Please try again.'
       );
     } finally {
-      setStatus((current) => (current === 'loading' ? 'idle' : current));
+      setStatus((current) =>
+        current === 'loading' ? 'idle' : current
+      );
     }
   };
 
@@ -89,6 +98,7 @@ export function AdminLogin() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@example.com"
                   required
+                  autoComplete="email"
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 />
               </div>
@@ -112,6 +122,7 @@ export function AdminLogin() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
+                  autoComplete="current-password"
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 />
               </div>

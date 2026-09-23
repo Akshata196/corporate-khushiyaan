@@ -16,6 +16,8 @@ import {
   Package,
   CalendarDays,
   MessageSquare,
+  User,
+KeyRound,
 } from 'lucide-react';
 
 interface QuoteRequest {
@@ -54,6 +56,26 @@ export function AdminDashboard() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
+
+const [adminEmail, setAdminEmail] = useState(() => {
+  try {
+    const admin = JSON.parse(localStorage.getItem('adminUser') || 'null');
+    return admin?.email || '';
+  } catch {
+    return '';
+  }
+});
+
+const [newEmail, setNewEmail] = useState('');
+const [currentPassword, setCurrentPassword] = useState('');
+const [newPassword, setNewPassword] = useState('');
+const [confirmPassword, setConfirmPassword] = useState('');
+
+const [accountLoading, setAccountLoading] = useState(false);
+const [accountError, setAccountError] = useState('');
+const [accountSuccess, setAccountSuccess] = useState('');
 
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -114,6 +136,150 @@ export function AdminDashboard() {
     localStorage.removeItem('adminToken');
     navigate('/admin/login');
   };
+
+  const handleChangeEmail = async () => {
+  const token = localStorage.getItem('adminToken');
+
+  if (!token) {
+    navigate('/admin/login');
+    return;
+  }
+
+  const email = newEmail.trim().toLowerCase();
+
+  if (!email) {
+    setAccountError('Please enter a new email address.');
+    return;
+  }
+
+  setAccountLoading(true);
+  setAccountError('');
+  setAccountSuccess('');
+
+  try {
+    const response = await fetch(`${API_URL}/api/auth/email`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+
+    if (response.status === 401) {
+      localStorage.removeItem('adminToken');
+      navigate('/admin/login');
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Unable to update email.');
+    }
+
+    setAdminEmail(data.admin.email);
+    setNewEmail('');
+
+    const existingAdmin = JSON.parse(
+      localStorage.getItem('adminUser') || '{}'
+    );
+
+    localStorage.setItem(
+      'adminUser',
+      JSON.stringify({
+        ...existingAdmin,
+        id: data.admin.id,
+        email: data.admin.email,
+      })
+    );
+
+    setAccountSuccess('Email updated successfully.');
+  } catch (error) {
+    setAccountError(
+      error instanceof Error
+        ? error.message
+        : 'Something went wrong while updating email.'
+    );
+  } finally {
+    setAccountLoading(false);
+  }
+};
+
+const handleChangePassword = async () => {
+  const token = localStorage.getItem('adminToken');
+
+  if (!token) {
+    navigate('/admin/login');
+    return;
+  }
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    setAccountError('Please fill in all password fields.');
+    return;
+  }
+
+  if (newPassword.length < 8) {
+    setAccountError('New password must be at least 8 characters long.');
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    setAccountError('New passwords do not match.');
+    return;
+  }
+
+  setAccountLoading(true);
+  setAccountError('');
+  setAccountSuccess('');
+
+  try {
+    const response = await fetch(`${API_URL}/api/auth/password`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        currentPassword,
+        newPassword,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.status === 401) {
+      localStorage.removeItem('adminToken');
+      navigate('/admin/login');
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Unable to update password.');
+    }
+
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+
+    setAccountSuccess(
+      'Password updated successfully. Please log in again.'
+    );
+
+    setTimeout(() => {
+      localStorage.removeItem('adminToken');
+      navigate('/admin/login');
+    }, 1500);
+  } catch (error) {
+    setAccountError(
+      error instanceof Error
+        ? error.message
+        : 'Something went wrong while updating password.'
+    );
+  } finally {
+    setAccountLoading(false);
+  }
+};
 
   const handleSelectQuote = (quote: QuoteRequest) => {
     setSelectedQuote(quote);
@@ -254,6 +420,22 @@ export function AdminDashboard() {
           </div>
 
           <div className="flex items-center gap-3">
+
+             {/* Account */}
+            <button
+              onClick={() => {
+              setShowAccountSettings(true);
+              setAccountError('');
+              setAccountSuccess('');
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition text-sm font-medium"
+           >
+             <User className="w-4 h-4" />
+              Account
+            </button>
+
+
+             {/* Refresh */}
             <button
               onClick={fetchQuotes}
               disabled={loading}
@@ -722,6 +904,261 @@ export function AdminDashboard() {
           </div>
         </div>
       )}
+
+            {/* Account Settings Modal */}
+      {showAccountSettings && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          {/* Overlay */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => {
+              if (!accountLoading) {
+                setShowAccountSettings(false);
+                setAccountError('');
+                setAccountSuccess('');
+              }
+            }}
+          />
+
+          {/* Modal */}
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl">
+            {/* Header */}
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-5 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Account Settings
+                </h2>
+
+                <p className="text-sm text-gray-500 mt-1">
+                  Manage your admin account
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!accountLoading) {
+                    setShowAccountSettings(false);
+                    setAccountError('');
+                    setAccountSuccess('');
+                  }
+                }}
+                disabled={accountLoading}
+                className="p-2 rounded-lg hover:bg-gray-100 transition disabled:opacity-50"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-8">
+              {/* Current Account */}
+              <section>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
+                    <User className="w-5 h-5 text-red-600" />
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-gray-900">
+                      Account Information
+                    </h3>
+
+                    <p className="text-sm text-gray-500">
+                      Your current administrator account
+                    </p>
+                  </div>
+                </div>
+
+                <label
+                  htmlFor="current-admin-email"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Current Email
+                </label>
+
+                <input
+                  id="current-admin-email"
+                  type="email"
+                  value={adminEmail}
+                  disabled
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+                />
+              </section>
+
+              {/* Change Email */}
+              <section className="border-t border-gray-200 pt-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                    <Mail className="w-5 h-5 text-blue-600" />
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-gray-900">
+                      Change Email
+                    </h3>
+
+                    <p className="text-sm text-gray-500">
+                      Update the email used to sign in
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <input
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="Enter new email address"
+                    disabled={accountLoading}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-50"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={handleChangeEmail}
+                    disabled={accountLoading}
+                    className="px-5 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition"
+                  >
+                    {accountLoading ? 'Updating...' : 'Change Email'}
+                  </button>
+                </div>
+              </section>
+
+              {/* Change Password */}
+              <section className="border-t border-gray-200 pt-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
+                    <KeyRound className="w-5 h-5 text-purple-600" />
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-gray-900">
+                      Change Password
+                    </h3>
+
+                    <p className="text-sm text-gray-500">
+                      Update your admin login password
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label
+                      htmlFor="current-password"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Current Password
+                    </label>
+
+                    <input
+                      id="current-password"
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) =>
+                        setCurrentPassword(e.target.value)
+                      }
+                      placeholder="Enter current password"
+                      disabled={accountLoading}
+                      autoComplete="current-password"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="new-password"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      New Password
+                    </label>
+
+                    <input
+                      id="new-password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) =>
+                        setNewPassword(e.target.value)
+                      }
+                      placeholder="Enter new password"
+                      disabled={accountLoading}
+                      autoComplete="new-password"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="confirm-password"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Confirm New Password
+                    </label>
+
+                    <input
+                      id="confirm-password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) =>
+                        setConfirmPassword(e.target.value)
+                      }
+                      placeholder="Confirm new password"
+                      disabled={accountLoading}
+                      autoComplete="new-password"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-50"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleChangePassword}
+                    disabled={accountLoading}
+                    className="px-5 py-2.5 rounded-lg bg-gray-900 hover:bg-gray-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition"
+                  >
+                    {accountLoading
+                      ? 'Updating...'
+                      : 'Change Password'}
+                  </button>
+                </div>
+              </section>
+
+              {/* Messages */}
+              {accountSuccess && (
+                <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg p-3 text-sm">
+                  {accountSuccess}
+                </div>
+              )}
+
+              {accountError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 text-sm">
+                  {accountError}
+                </div>
+              )}
+
+              {/* Close */}
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!accountLoading) {
+                      setShowAccountSettings(false);
+                      setAccountError('');
+                      setAccountSuccess('');
+                    }
+                  }}
+                  disabled={accountLoading}
+                  className="px-5 py-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 text-sm font-medium transition"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 }
