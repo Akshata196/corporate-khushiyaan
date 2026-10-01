@@ -42,7 +42,7 @@ const FIELD_BASE =
  */
 const CONTACT_DETAILS = {
   phone: '+91 8446227102',
-  email: 'corporatekhushiyaan@gmail.com',
+  email: 'contact@corporatekhushiyaan.com',
   whatsapp: 'https://wa.me/918446227102',
   instagram: 'https://www.instagram.com/corporatekhushiyaan_thegifthub/',
   linkedin: 'https://www.linkedin.com/company/corporate-khushiyaan-the-gift-hub/posts/?feedView=all',

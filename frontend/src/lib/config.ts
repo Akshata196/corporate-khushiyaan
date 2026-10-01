@@ -4,7 +4,7 @@ export const WHATSAPP_NUMBER = '[WHATSAPP_NUMBER]';
 
 export const CONTACT = {
   phone: '+91 8446227102',
-  email: '[EMAIL ADDRESS]',
+  email: 'contact@corporatekhushiyaan.com',
   location: 'Pune, Maharashtra',
   instagram: 'https://www.instagram.com/corporatekhushiyaan_thegifthub/',
   linkedin: 'https://www.linkedin.com/company/corporate-khushiyaan-the-gift-hub/posts/?feedView=all',
